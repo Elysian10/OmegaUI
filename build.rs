@@ -3,13 +3,6 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    // Build the CXX bridge and C++ code first
-    cxx_build::bridge("src/main.rs")
-        .file("cxx/src/ui.cc")
-        .include("cxx/include")
-        .flag_if_supported("-std=c++14")
-        .compile("omega-cxx");
-
     // Set up vcpkg if needed
     let vcpkg_root = Path::new("vcpkg");
     let vcpkg_exe = vcpkg_root.join("vcpkg");
@@ -45,17 +38,28 @@ fn main() {
         .current_dir(env::current_dir().unwrap())
         .status();
     
-    if let Ok(status) = status {
-        if status.success() {
-            // Use the installed dependencies
-            let installed_dir = Path::new("vcpkg_installed/x64-linux");
-            let lib_dir = installed_dir.join("lib");
-            
-            if lib_dir.exists() {
-                println!("cargo:rustc-link-search={}", lib_dir.display());
-                println!("cargo:rustc-link-lib=glfw3");
-            }
-        }
+    let installed_dir = Path::new("vcpkg_installed/x64-linux");
+    let include_dir = installed_dir.join("include");
+    let lib_dir = installed_dir.join("lib");
+    
+    // Build the CXX bridge and C++ code with vcpkg includes
+    let mut build = cxx_build::bridge("src/main.rs");
+    build
+        .file("cxx/src/ui.cc")
+        .include("cxx/include")
+        .flag_if_supported("-std=c++14");
+    
+    // Add vcpkg include directory if it exists
+    if include_dir.exists() {
+        build.include(include_dir);
+    }
+    
+    build.compile("omega-cxx");
+    
+    // Add vcpkg library directory if it exists
+    if lib_dir.exists() {
+        println!("cargo:rustc-link-search={}", lib_dir.display());
+        println!("cargo:rustc-link-lib=glfw3");
     }
     
     println!("cargo:rerun-if-changed=cxx/src/ui.cc");

@@ -1,14 +1,34 @@
 #[cxx::bridge]
 mod ffi {
     unsafe extern "C++" {
-        include!("ui.h"); // Just the filename
+        include!("ui.h");
         
         type UI;
         fn new_ui() -> UniquePtr<UI>;
+        fn should_close(&self) -> bool;
+        fn poll_events(self: Pin<&mut UI>);
+        fn swap_buffers(self: Pin<&mut UI>);
     }
 }
 
 fn main() {
-    let _client = ffi::new_ui();
-    println!("ui created successfully!");
+    let mut ui = ffi::new_ui();
+    if ui.is_null() {
+        eprintln!("Failed to create UI");
+        return;
+    }
+    
+    println!("UI created successfully!");
+    
+    // Main event loop
+    while !ui.should_close() {
+        // Use as_mut() for each individual call
+        ui.as_mut().unwrap().poll_events();
+        
+        // Your rendering code would go here
+        
+        ui.as_mut().unwrap().swap_buffers();
+    }
+    
+    println!("Window closed");
 }
