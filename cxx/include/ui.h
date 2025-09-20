@@ -1,14 +1,16 @@
+// cxx/include/ui.h
+#pragma once
+
 #include <memory>
 
-// Forward declaration
-struct GLFWwindow;
+class Window;  // Forward declaration
 
 class UI {
 private:
-    GLFWwindow* window;
+    std::unique_ptr<Window> window;
     
 public:
-    UI();
+    UI(std::unique_ptr<Window> window);
     ~UI();
     
     // Prevent copying
