@@ -40,8 +40,8 @@ fn main() {
     let lib_dir = installed_dir.join("lib");
 
     // Build the CXX bridge and C++ code with vcpkg includes
-    let mut build = cxx_build::bridge("src/main.rs");
-    build.file("cxx/src/ui.cc").file("cxx/src/glfw_window.cc").include("cxx/include").flag_if_supported("-std=c++14");
+    let mut build = cxx_build::bridges(&["src/main.rs", "src/ui/events.rs"]);
+    build.files(&["cxx/src/ui.cc", "cxx/src/glfw_window.cc"]).include("cxx/include").flag_if_supported("-std=c++23");
 
     // Add vcpkg include directory if it exists
     if include_dir.exists() {

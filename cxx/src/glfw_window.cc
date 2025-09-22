@@ -7,6 +7,35 @@
 class GLFWWindow : public Window {
 private:
     GLFWwindow* window;
+    KeyCallback key_callback;
+    CursorPosCallback cursor_pos_callback;
+    MouseButtonCallback mouse_button_callback;
+    
+    // Static methods for GLFW callbacks
+    static void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+        GLFWWindow* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+        if (self && self->key_callback) {
+            // Get the key name (may be nullptr for some keys)
+            const char* key_name_ptr = glfwGetKeyName(key, scancode);
+            std::string key_name = key_name_ptr ? key_name_ptr : "unknown";
+            
+            self->key_callback(key, scancode, action, mods, key_name);
+        }
+    }
+    
+    static void glfw_cursor_pos_callback(GLFWwindow* window, double x, double y) {
+        GLFWWindow* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+        if (self && self->cursor_pos_callback) {
+            self->cursor_pos_callback(x, y);
+        }
+    }
+
+    static void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+        GLFWWindow* self = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+        if (self && self->mouse_button_callback) {
+            self->mouse_button_callback(button, action, mods);
+        }
+    }
     
 public:
     GLFWWindow(int width, int height, const char* title) : window(nullptr) {
@@ -23,6 +52,14 @@ public:
             glfwTerminate();
             throw std::runtime_error("Failed to create GLFW window");
         }
+        
+        // Set user pointer to this instance for static callbacks
+        glfwSetWindowUserPointer(window, this);
+        
+        // Set up GLFW callbacks
+        glfwSetKeyCallback(window, glfw_key_callback);
+        glfwSetCursorPosCallback(window, glfw_cursor_pos_callback);
+        glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
         
         make_context_current();
         std::cout << "GLFWWindow created successfully" << std::endl;
@@ -62,6 +99,18 @@ public:
         int width, height;
         glfwGetWindowSize(window, &width, &height);
         return height;
+    }
+    
+    void set_key_callback(KeyCallback callback) override {
+        key_callback = std::move(callback);
+    }
+    
+    void set_cursor_pos_callback(CursorPosCallback callback) override {
+        cursor_pos_callback = std::move(callback);
+    }
+
+    void set_mouse_button_callback(MouseButtonCallback callback) override {
+        mouse_button_callback = std::move(callback);
     }
 };
 

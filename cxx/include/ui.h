@@ -3,26 +3,25 @@
 
 #include <memory>
 
-class Window;  // Forward declaration
+class Window;
 
 class UI {
 private:
     std::unique_ptr<Window> window;
+    void set_callbacks();
     
 public:
-    UI(std::unique_ptr<Window> window);
+    explicit UI(std::unique_ptr<Window> window);
     ~UI();
     
-    // Prevent copying
-    UI(const UI&) = delete;
-    UI& operator=(const UI&) = delete;
-    
-    // Check if window should close
     bool should_close() const;
-    
-    // Process events and swap buffers
     void poll_events();
     void swap_buffers();
+    void run_event_loop();
+    
+    // Delete copy constructor and assignment operator
+    UI(const UI&) = delete;
+    UI& operator=(const UI&) = delete;
 };
 
 std::unique_ptr<UI> new_ui();
