@@ -14,25 +14,30 @@ fn main() {
         let status = Command::new("git").args(["clone", "https://github.com/Microsoft/vcpkg.git"]).status();
 
         if status.is_err() || !status.unwrap().success() {
-            println!("cargo:warning=Failed to clone vcpkg. Make sure git is installed.");
-            return;
+            panic!("Failed to clone vcpkg");
         }
 
         // Bootstrap vcpkg
         let bootstrap_status = Command::new("vcpkg/bootstrap-vcpkg.sh").arg("-disableMetrics").status();
 
         if bootstrap_status.is_err() || !bootstrap_status.unwrap().success() {
-            println!("cargo:warning=Failed to bootstrap vcpkg.");
-            return;
+            panic!("Failed to bootstrap vcpkg");
         }
     }
 
     // Install dependencies using manifest mode
-    let status = Command::new(&vcpkg_exe).arg("install").arg("--feature-flags=manifests").current_dir(env::current_dir().unwrap()).status();
+    let output = Command::new(&vcpkg_exe).arg("install").arg("--feature-flags=manifests").current_dir(env::current_dir().unwrap()).output();
 
-    if status.is_err() || !status.unwrap().success() {
-        println!("cargo:warning=Failed to install vcpkg dependencies.");
-        return;
+    match output {
+        Ok(output) => {
+            if !output.status.success() {
+                println!("cargo:warning=vcpkg install failed: {}", String::from_utf8_lossy(&output.stderr));
+                panic!("vcpkg install failed");
+            }
+        }
+        Err(e) => {
+            panic!("Failed to run vcpkg: {}", e);
+        }
     }
 
     let installed_dir = Path::new("vcpkg_installed/x64-linux");
@@ -43,24 +48,20 @@ fn main() {
     let mut build = cxx_build::bridges(&["src/main.rs", "src/ui/events.rs"]);
     build.files(&["cxx/src/ui.cc", "cxx/src/glfw_window.cc"]).include("cxx/include").flag_if_supported("-std=c++23");
 
-    // Add vcpkg include directory if it exists
-    if include_dir.exists() {
-        build.include(include_dir);
-    }
+    build.include(include_dir.clone());
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let cxxbridge_include = Path::new(&out_dir).join("cxxbridge");
     build.include(cxxbridge_include);
+    build.include(include_dir.join("skia"));
 
     build.compile("omega-cxx");
 
-    // Add vcpkg library directory if it exists
-    if lib_dir.exists() {
-        println!("cargo:rustc-link-search={}", lib_dir.display());
-        println!("cargo:rustc-link-lib=glfw3");
-    }
+    println!("cargo:rustc-link-search={}", lib_dir.display());
+    println!("cargo:rustc-link-lib=glfw3");
+    println!("cargo:rustc-link-lib=skia");
 
-    println!("cargo:rerun-if-changed=cxx/src/ui.cc");
-    println!("cargo:rerun-if-changed=cxx/include/ui.h");
+    println!("cargo:rerun-if-changed=cxx/src");
+    println!("cargo:rerun-if-changed=cxx/include");
     println!("cargo:rerun-if-changed=vcpkg.json");
 }

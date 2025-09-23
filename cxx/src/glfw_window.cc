@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <stdexcept>
+// #include "include/core/SkCanvas.h"
 
 class GLFWWindow : public Window {
 private:
@@ -43,9 +44,6 @@ public:
             throw std::runtime_error("Failed to initialize GLFW");
         }
         
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         
         window = glfwCreateWindow(width, height, title, nullptr, nullptr);
         if (!window) {

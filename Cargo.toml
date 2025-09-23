@@ -5,6 +5,7 @@ edition = "2024"
 
 [build-dependencies]
 cxx-build = "1.0"
+vcpkg = "0.2"
 
 [dependencies]
 anyhow = "1.0.100"           # Error handling
